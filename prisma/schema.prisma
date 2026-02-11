@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum SessionType {
+  LECTURE
+  LAB
+  TUTORIAL
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  PENDING
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subjects  Subject[]
+  attendance AttendanceRecord[]
+}
+
+model Subject {
+  id          String   @id @default(cuid())
+  name        String
+  code        String
+  color       String
+  theoryCount Int      @default(0)
+  labCount    Int      @default(0)
+  tutCount    Int      @default(0)
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  sessions    Session[]
+}
+
+model Session {
+  id          String           @id @default(cuid())
+  subjectId   String
+  subject     Subject          @relation(fields: [subjectId], references: [id])
+  date        DateTime
+  startTime   String
+  endTime     String
+  type        SessionType
+  status      AttendanceStatus @default(PENDING)
+  
+  attendance  AttendanceRecord[]
+}
+
+model AttendanceRecord {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  sessionId String
+  session   Session          @relation(fields: [sessionId], references: [id])
+  status    AttendanceStatus
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([userId, sessionId])
+}
+
+model AcademicCalendar {
+  id        String   @id @default(cuid())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  type      String   // PHASE, EXAM, HOLIDAY
+  isHoliday Boolean  @default(false)
+}
